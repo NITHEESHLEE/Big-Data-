@@ -1,0 +1,49 @@
+docker compose up -d
+
+docker exec docker-hive-hive-server-1 jps
+
+docker exec -it docker-hive-namenode-1 jps
+
+docker exec -it docker-hive-datanode-1 jps
+
+docker exec -it docker-hive-hive-server-1 beeline -u 'jdbc:hive2://localhost:10000/'
+
+hdfs fsck /user/hive/warehouse/ecommerce_db.db/events_raw/ecom.csv -files -blocks -locations
+
+
+CREATE DATABASE IF NOT EXISTS ecommerce_db;
+USE ecommerce_db;
+
+CREATE TABLE IF NOT EXISTS events_raw (
+    event_time STRING,
+    event_type STRING,
+    product_id BIGINT,
+    category_id BIGINT,
+    category_code STRING,
+    brand STRING,
+    price DOUBLE,
+    user_id BIGINT,
+    user_session STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+TBLPROPERTIES ("skip.header.line.count"="1”);
+
+
+show tables;
+show databases;
+
+USE ecommerce_db;
+
+SELECT brand, COUNT(*) AS total_views
+FROM events_raw
+WHERE event_type = 'view' 
+  AND brand IS NOT NULL 
+  AND brand != ''
+GROUP BY brand
+ORDER BY total_views DESC
+LIMIT 10;
+
+
+/opt/spark/work-dir$ /opt/spark/bin/spark-submit --master "local[*]" spark_task3.py
